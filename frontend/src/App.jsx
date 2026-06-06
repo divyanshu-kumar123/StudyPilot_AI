@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Login from './pages/auth/Login';
+import Dashboard from './pages/dashboard/Dashboard';
 
 // Temporary Placeholder Component for testing routes
 const PlaceholderPage = ({ title }) => (
@@ -21,7 +22,7 @@ function App() {
                 {/* Protected Application Routes */}
                 <Route element={<ProtectedRoute />}>
                     <Route element={<MainLayout />}>
-                        <Route path="/" element={<PlaceholderPage title="Dashboard overview" />} />
+                        <Route path="/" element={<Dashboard />} />
                         <Route path="/documents" element={<PlaceholderPage title="My Documents" />} />
                         <Route path="/rooms" element={<PlaceholderPage title="Study Rooms" />} />
                         <Route path="/analytics" element={<PlaceholderPage title="Performance Analytics" />} />
