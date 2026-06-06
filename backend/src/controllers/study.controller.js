@@ -5,7 +5,7 @@ const watsonxService = require("../services/watsonx.service");
 const ApiError = require("../utils/apiError");
 const ApiResponse = require("../utils/apiResponse");
 const catchAsync = require("../utils/catchAsync");
-const KnowledgeGraph = require('../models/knowledgeGraph.model');
+const KnowledgeGraph = require("../models/knowledgeGraph.model");
 
 // Helper to retrieve document context safely
 const getDocumentContext = async (documentId, userId, limit = 10) => {
@@ -70,6 +70,17 @@ exports.generateQuiz = catchAsync(async (req, res) => {
             }
         ]
     }
+        Return ONLY valid JSON.
+            Do not include:
+            - markdown
+            - explanations
+            - notes
+            - code fences
+            - text before JSON
+            - text after JSON
+
+            Your response must begin with {
+            and end with }
     `;
 
   console.log(
@@ -121,17 +132,20 @@ exports.generateQuiz = catchAsync(async (req, res) => {
     .json(new ApiResponse(201, quiz, "Quiz generated successfully"));
 });
 
-
 exports.generateFlashcards = catchAsync(async (req, res) => {
-    const { documentId } = req.params;
-    const { difficulty = 'medium', count = 10 } = req.body;
-    const userId = req.user._id;
+  const { documentId } = req.params;
+  const { difficulty = "medium", count = 10 } = req.body;
+  const userId = req.user._id;
 
-    const { document, contextText } = await getDocumentContext(documentId, userId);
+  const { document, contextText } = await getDocumentContext(
+    documentId,
+    userId,
+  );
 
-    if (!contextText) throw new ApiError(400, 'Not enough text extracted from document.');
+  if (!contextText)
+    throw new ApiError(400, "Not enough text extracted from document.");
 
-    const prompt = `
+  const prompt = `
     You are an expert tutor. Based strictly on the provided document context, generate ${count} flashcards at a ${difficulty} difficulty level.
     
     Document Context:
@@ -151,45 +165,60 @@ exports.generateFlashcards = catchAsync(async (req, res) => {
     }
     `;
 
-    console.log(`[AI] Requesting Flashcards for Document: ${documentId}...`);
-    const generatedText = await watsonxService.generateText(prompt);
+  console.log(`[AI] Requesting Flashcards for Document: ${documentId}...`);
+  const generatedText = await watsonxService.generateText(prompt);
 
-    let parsedData;
-    try {
-        const firstBrace = generatedText.indexOf('{');
-        const lastBrace = generatedText.lastIndexOf('}');
-        parsedData = JSON.parse(generatedText.substring(firstBrace, lastBrace + 1));
-    } catch (error) {
-        throw new ApiError(500, 'AI generated invalid data format. Please try again.');
-    }
+  let parsedData;
+  try {
+    const firstBrace = generatedText.indexOf("{");
+    const lastBrace = generatedText.lastIndexOf("}");
+    parsedData = JSON.parse(generatedText.substring(firstBrace, lastBrace + 1));
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "AI generated invalid data format. Please try again.",
+    );
+  }
 
-    // Save each flashcard to the database
-    const Flashcard = require('../models/flashcard.model');
-    const flashcardsToInsert = parsedData.flashcards.map(fc => ({
-        userId,
-        documentId,
-        question: fc.question,
-        answer: fc.answer,
-        topic: fc.topic,
-        difficulty,
-        generatedByAI: true
-    }));
+  // Save each flashcard to the database
+  const Flashcard = require("../models/flashcard.model");
+  const flashcardsToInsert = parsedData.flashcards.map((fc) => ({
+    userId,
+    documentId,
+    question: fc.question,
+    answer: fc.answer,
+    topic: fc.topic,
+    difficulty,
+    generatedByAI: true,
+  }));
 
-    const savedFlashcards = await Flashcard.insertMany(flashcardsToInsert);
+  const savedFlashcards = await Flashcard.insertMany(flashcardsToInsert);
 
-    res.status(201).json(new ApiResponse(201, savedFlashcards, 'Flashcards generated successfully'));
+  res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        savedFlashcards,
+        "Flashcards generated successfully",
+      ),
+    );
 });
 
 exports.generateNotes = catchAsync(async (req, res) => {
-    const { documentId } = req.params;
-    const { noteType = 'summary' } = req.body; // 'summary', 'detailed', or 'key_points'
-    const userId = req.user._id;
+  const { documentId } = req.params;
+  const { noteType = "summary" } = req.body; // 'summary', 'detailed', or 'key_points'
+  const userId = req.user._id;
 
-    const { document, contextText } = await getDocumentContext(documentId, userId);
+  const { document, contextText } = await getDocumentContext(
+    documentId,
+    userId,
+  );
 
-    if (!contextText) throw new ApiError(400, 'Not enough text extracted from document.');
+  if (!contextText)
+    throw new ApiError(400, "Not enough text extracted from document.");
 
-    const prompt = `
+  const prompt = `
     You are an expert note-taker. Based strictly on the provided document context, generate ${noteType} notes.
     
     Document Context:
@@ -206,45 +235,56 @@ exports.generateNotes = catchAsync(async (req, res) => {
     }
     `;
 
-    console.log(`[AI] Requesting Notes for Document: ${documentId}...`);
-    const generatedText = await watsonxService.generateText(prompt);
+  console.log(`[AI] Requesting Notes for Document: ${documentId}...`);
+  const generatedText = await watsonxService.generateText(prompt);
 
-    let parsedData;
-    try {
-        const firstBrace = generatedText.indexOf('{');
-        const lastBrace = generatedText.lastIndexOf('}');
-        parsedData = JSON.parse(generatedText.substring(firstBrace, lastBrace + 1));
-    } catch (error) {
-        throw new ApiError(500, 'AI generated invalid data format. Please try again.');
-    }
+  let parsedData;
+  try {
+    const firstBrace = generatedText.indexOf("{");
+    const lastBrace = generatedText.lastIndexOf("}");
+    parsedData = JSON.parse(generatedText.substring(firstBrace, lastBrace + 1));
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "AI generated invalid data format. Please try again.",
+    );
+  }
 
-    const Notes = require('../models/notes.model');
-    const notes = await Notes.create({
-        userId,
-        documentId,
-        title: parsedData.title,
-        noteType,
-        content: parsedData.content,
-        tags: parsedData.tags,
-        generatedByAI: true
-    });
+  const Notes = require("../models/notes.model");
+  const notes = await Notes.create({
+    userId,
+    documentId,
+    title: parsedData.title,
+    noteType,
+    content: parsedData.content,
+    tags: parsedData.tags,
+    generatedByAI: true,
+  });
 
-    res.status(201).json(new ApiResponse(201, notes, 'Notes generated successfully'));
+  res
+    .status(201)
+    .json(new ApiResponse(201, notes, "Notes generated successfully"));
 });
 
 exports.generateKnowledgeGraph = catchAsync(async (req, res) => {
-    const { documentId } = req.params;
-    const userId = req.user._id;
+  const { documentId } = req.params;
+  const userId = req.user._id;
 
-    // Use our existing helper to check rights and grab text chunks
-    const { document, contextText } = await getDocumentContext(documentId, userId);
+  // Use our existing helper to check rights and grab text chunks
+  const { document, contextText } = await getDocumentContext(
+    documentId,
+    userId,
+  );
 
-    if (!contextText) {
-        throw new ApiError(400, 'Not enough text extracted from document to construct a graph.');
-    }
+  if (!contextText) {
+    throw new ApiError(
+      400,
+      "Not enough text extracted from document to construct a graph.",
+    );
+  }
 
-    // Direct Watsonx to parse terms, concepts, and relationships as an architectural layout
-    const prompt = `
+  // Direct Watsonx to parse terms, concepts, and relationships as an architectural layout
+  const prompt = `
     You are an advanced data architect. Analyze the provided text context and build a structured knowledge graph map of the concepts, terms, and formulas contained within.
     
     Context:
@@ -267,56 +307,68 @@ exports.generateKnowledgeGraph = catchAsync(async (req, res) => {
     }
     `;
 
-    console.log(`[AI] Generating Knowledge Graph from Watsonx for Document: ${documentId}...`);
-    const generatedText = await watsonxService.generateText(prompt);
+  console.log(
+    `[AI] Generating Knowledge Graph from Watsonx for Document: ${documentId}...`,
+  );
+  const generatedText = await watsonxService.generateText(prompt);
 
-    // Hardened JSON boundary boundaries extraction
-    let parsedData;
-    try {
-        const firstBrace = generatedText.indexOf('{');
-        const lastBrace = generatedText.lastIndexOf('}');
-        if (firstBrace === -1 || lastBrace === -1) {
-            throw new Error('No JSON boundaries found');
-        }
-        parsedData = JSON.parse(generatedText.substring(firstBrace, lastBrace + 1));
-    } catch (error) {
-        console.error('[AI] Knowledge Graph JSON parse failed:', generatedText);
-        throw new ApiError(500, 'AI generated invalid structural layout data. Please try again.');
+  // Hardened JSON boundary boundaries extraction
+  let parsedData;
+  try {
+    const firstBrace = generatedText.indexOf("{");
+    const lastBrace = generatedText.lastIndexOf("}");
+    if (firstBrace === -1 || lastBrace === -1) {
+      throw new Error("No JSON boundaries found");
     }
-
-    // Save or replace graph layout (Upsert pattern per document)
-    const graph = await KnowledgeGraph.findOneAndUpdate(
-        { documentId },
-        {
-            documentId,
-            nodes: parsedData.nodes,
-            edges: parsedData.edges,
-            generatedAt: new Date()
-        },
-        { new: true, upsert: true }
+    parsedData = JSON.parse(generatedText.substring(firstBrace, lastBrace + 1));
+  } catch (error) {
+    console.error("[AI] Knowledge Graph JSON parse failed:", generatedText);
+    throw new ApiError(
+      500,
+      "AI generated invalid structural layout data. Please try again.",
     );
+  }
 
-    res.status(201).json(
-        new ApiResponse(201, graph, 'Knowledge graph map generated successfully')
+  // Save or replace graph layout (Upsert pattern per document)
+  const graph = await KnowledgeGraph.findOneAndUpdate(
+    { documentId },
+    {
+      documentId,
+      nodes: parsedData.nodes,
+      edges: parsedData.edges,
+      generatedAt: new Date(),
+    },
+    { new: true, upsert: true },
+  );
+
+  res
+    .status(201)
+    .json(
+      new ApiResponse(201, graph, "Knowledge graph map generated successfully"),
     );
 });
 
 exports.getKnowledgeGraph = catchAsync(async (req, res) => {
-    const { documentId } = req.params;
-    const userId = req.user._id;
+  const { documentId } = req.params;
+  const userId = req.user._id;
 
-    // Fast-path security check: Ensure document belongs to requesting user
-    const document = await Document.findOne({ _id: documentId, userId });
-    if (!document) {
-        throw new ApiError(404, 'Document record not found or unauthorized access');
-    }
+  // Fast-path security check: Ensure document belongs to requesting user
+  const document = await Document.findOne({ _id: documentId, userId });
+  if (!document) {
+    throw new ApiError(404, "Document record not found or unauthorized access");
+  }
 
-    const graph = await KnowledgeGraph.findOne({ documentId });
-    if (!graph) {
-        throw new ApiError(404, 'No knowledge graph found for this document. Please generate it first.');
-    }
+  const graph = await KnowledgeGraph.findOne({ documentId });
+  if (!graph) {
+    throw new ApiError(
+      404,
+      "No knowledge graph found for this document. Please generate it first.",
+    );
+  }
 
-    res.status(200).json(
-        new ApiResponse(200, graph, 'Knowledge graph retrieved successfully')
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, graph, "Knowledge graph retrieved successfully"),
     );
 });

@@ -8,6 +8,8 @@ import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Target, Layers, FileText, S
 import { documentService } from '../../services/document.service';
 import Loader from '../../components/common/Loader';
 import QuizTab from '../../components/study/QuizTab';
+import FlashcardsTab from '../../components/study/FlashcardsTab';
+import NotesTab from '../../components/study/NotesTab';
 
 // Configure the PDF.js worker for Vite
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -152,7 +154,7 @@ const StudyWorkspace = () => {
 
                     {/* Tab Content Area */}
                     <div className="flex-1 overflow-y-auto p-6">
-                       <AnimatePresence mode="wait">
+                      <AnimatePresence mode="wait">
                             <motion.div
                                 key={activeTab}
                                 initial={{ opacity: 0, y: 10 }}
@@ -162,16 +164,18 @@ const StudyWorkspace = () => {
                                 className="h-full"
                             >
                                 {activeTab === 'quizzes' && <QuizTab documentId={documentId} />}
+                                {activeTab === 'flashcards' && <FlashcardsTab documentId={documentId} />}
+                                {activeTab === 'notes' && <NotesTab documentId={documentId} />}
                                 
-                                {activeTab !== 'quizzes' && (
+                                {activeTab === 'graph' && (
                                     <div className="h-full flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-gray-200 rounded-2xl bg-surface">
                                         <BrainCircuit className="h-12 w-12 text-primary-200 mb-4" />
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2 capitalize">{activeTab} Generation Engine</h3>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2 capitalize">Knowledge Graph</h3>
                                         <p className="text-sm text-gray-500 max-w-sm">
-                                            The AI is ready to generate personalized {activeTab} based on this specific document context.
+                                            The AI is ready to generate a visual map based on this specific document context.
                                         </p>
                                         <button className="mt-6 px-6 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm">
-                                            Coming Soon
+                                            Generate Map
                                         </button>
                                     </div>
                                 )}

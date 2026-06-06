@@ -11,3 +11,12 @@
     @apply bg-background text-gray-900 antialiased;
   }
 }
+
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+}
