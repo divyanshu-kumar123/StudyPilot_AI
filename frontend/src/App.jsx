@@ -7,16 +7,8 @@ import Documents from "./pages/documents/Documents";
 import StudyWorkspace from "./pages/study/StudyWorkspace";
 import Rooms from "./pages/rooms/Rooms";
 import ActiveRoom from "./pages/rooms/ActiveRoom";
-
-// Temporary Placeholder Component for testing routes
-const PlaceholderPage = ({ title }) => (
-  <div className="animate-fade-in">
-    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{title}</h1>
-    <p className="text-gray-500 mt-2">
-      This module is currently under construction.
-    </p>
-  </div>
-);
+import Analytics from "./pages/analytics/Analytics";
+import Settings from "./pages/settings/Settings";
 
 function App() {
   return (
@@ -32,14 +24,8 @@ function App() {
             <Route path="/study/:documentId" element={<StudyWorkspace />} />
             <Route path="/rooms" element={<Rooms />} />
             <Route path="/rooms/:roomCode" element={<ActiveRoom />} />
-            <Route
-              path="/analytics"
-              element={<PlaceholderPage title="Performance Analytics" />}
-            />
-            <Route
-              path="/settings"
-              element={<PlaceholderPage title="Account Settings" />}
-            />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
         </Route>
 
