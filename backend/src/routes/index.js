@@ -3,6 +3,7 @@ const authRoutes = require('./auth.routes');
 const documentRoutes = require('./document.routes');
 const studyRoutes = require('./study.routes');
 const roomRoutes = require('./room.routes');
+const analyticsRoutes = require('./analytics.routes');
 
 const router = Router();
 
@@ -11,5 +12,6 @@ router.use('/v1/auth', authRoutes);
 router.use('/v1/documents', documentRoutes);
 router.use('/v1/study', studyRoutes);
 router.use('/v1/rooms', roomRoutes);
+router.use('/v1/analytics', analyticsRoutes);
 
 module.exports = router;
