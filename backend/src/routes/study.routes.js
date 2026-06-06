@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { generateQuiz } = require('../controllers/study.controller');
+const { generateQuiz, generateFlashcards, generateNotes } = require('../controllers/study.controller');
 const verifyJWT = require('../middlewares/auth.middleware');
 
 const router = Router();
@@ -9,5 +9,7 @@ router.use(verifyJWT);
 
 // Document specific generations
 router.post('/:documentId/quiz', generateQuiz);
+router.post('/:documentId/flashcards', generateFlashcards);
+router.post('/:documentId/notes', generateNotes);
 
 module.exports = router;
