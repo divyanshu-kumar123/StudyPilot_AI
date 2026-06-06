@@ -7,6 +7,37 @@ const ApiResponse = require("../utils/apiResponse");
 const catchAsync = require("../utils/catchAsync");
 const KnowledgeGraph = require("../models/knowledgeGraph.model");
 
+// Bulletproof JSON extractor for unpredictable LLM outputs
+const extractJsonFromText = (text) => {
+    // 1. Strip out markdown code block syntax just in case
+    let cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    
+    // 2. Find the very first opening brace
+    const firstBrace = cleaned.indexOf('{');
+    if (firstBrace === -1) throw new Error('No JSON object found in response');
+
+    // 3. Track bracket depth to find the exact end of the FIRST valid JSON object
+    let depth = 0;
+    let lastBrace = -1;
+    
+    for (let i = firstBrace; i < cleaned.length; i++) {
+        if (cleaned[i] === '{') depth++;
+        else if (cleaned[i] === '}') {
+            depth--;
+            if (depth === 0) {
+                lastBrace = i;
+                break;
+            }
+        }
+    }
+
+    if (lastBrace === -1) throw new Error('Malformed JSON: Missing closing brace');
+
+    // 4. Extract and parse just that isolated block
+    const jsonString = cleaned.substring(firstBrace, lastBrace + 1);
+    return JSON.parse(jsonString);
+};
+
 // Helper to retrieve document context safely
 const getDocumentContext = async (documentId, userId, limit = 10) => {
   const document = await Document.findOne({ _id: documentId, userId });
@@ -92,27 +123,13 @@ exports.generateQuiz = catchAsync(async (req, res) => {
 
   // 4. Parse the AI Response safely
   let parsedData;
-  try {
-    // Find the absolute first and last braces to extract just the JSON object
-    const firstBrace = generatedText.indexOf("{");
-    const lastBrace = generatedText.lastIndexOf("}");
-
-    if (firstBrace === -1 || lastBrace === -1) {
-      throw new Error("No JSON boundaries found in AI response");
+    try {
+        parsedData = extractJsonFromText(generatedText);
+    } catch (error) {
+        console.error('[AI] JSON parse failed:', error.message);
+        console.error('[AI] Raw Output was:', generatedText);
+        throw new ApiError(500, 'AI generated invalid data format. Please try again.');
     }
-
-    const jsonString = generatedText.substring(firstBrace, lastBrace + 1);
-    parsedData = JSON.parse(jsonString);
-  } catch (error) {
-    console.error(
-      "[AI] Failed to parse Watsonx JSON output. Raw Output:",
-      generatedText,
-    );
-    throw new ApiError(
-      500,
-      "AI generated invalid data format. Please try again.",
-    );
-  }
 
   // 5. Save to Database
   const quiz = await Quiz.create({
@@ -169,16 +186,13 @@ exports.generateFlashcards = catchAsync(async (req, res) => {
   const generatedText = await watsonxService.generateText(prompt);
 
   let parsedData;
-  try {
-    const firstBrace = generatedText.indexOf("{");
-    const lastBrace = generatedText.lastIndexOf("}");
-    parsedData = JSON.parse(generatedText.substring(firstBrace, lastBrace + 1));
-  } catch (error) {
-    throw new ApiError(
-      500,
-      "AI generated invalid data format. Please try again.",
-    );
-  }
+    try {
+        parsedData = extractJsonFromText(generatedText);
+    } catch (error) {
+        console.error('[AI] JSON parse failed:', error.message);
+        console.error('[AI] Raw Output was:', generatedText);
+        throw new ApiError(500, 'AI generated invalid data format. Please try again.');
+    }
 
   // Save each flashcard to the database
   const Flashcard = require("../models/flashcard.model");
@@ -239,16 +253,13 @@ exports.generateNotes = catchAsync(async (req, res) => {
   const generatedText = await watsonxService.generateText(prompt);
 
   let parsedData;
-  try {
-    const firstBrace = generatedText.indexOf("{");
-    const lastBrace = generatedText.lastIndexOf("}");
-    parsedData = JSON.parse(generatedText.substring(firstBrace, lastBrace + 1));
-  } catch (error) {
-    throw new ApiError(
-      500,
-      "AI generated invalid data format. Please try again.",
-    );
-  }
+    try {
+        parsedData = extractJsonFromText(generatedText);
+    } catch (error) {
+        console.error('[AI] JSON parse failed:', error.message);
+        console.error('[AI] Raw Output was:', generatedText);
+        throw new ApiError(500, 'AI generated invalid data format. Please try again.');
+    }
 
   const Notes = require("../models/notes.model");
   const notes = await Notes.create({
@@ -314,20 +325,13 @@ exports.generateKnowledgeGraph = catchAsync(async (req, res) => {
 
   // Hardened JSON boundary boundaries extraction
   let parsedData;
-  try {
-    const firstBrace = generatedText.indexOf("{");
-    const lastBrace = generatedText.lastIndexOf("}");
-    if (firstBrace === -1 || lastBrace === -1) {
-      throw new Error("No JSON boundaries found");
+    try {
+        parsedData = extractJsonFromText(generatedText);
+    } catch (error) {
+        console.error('[AI] JSON parse failed:', error.message);
+        console.error('[AI] Raw Output was:', generatedText);
+        throw new ApiError(500, 'AI generated invalid data format. Please try again.');
     }
-    parsedData = JSON.parse(generatedText.substring(firstBrace, lastBrace + 1));
-  } catch (error) {
-    console.error("[AI] Knowledge Graph JSON parse failed:", generatedText);
-    throw new ApiError(
-      500,
-      "AI generated invalid structural layout data. Please try again.",
-    );
-  }
 
   // Save or replace graph layout (Upsert pattern per document)
   const graph = await KnowledgeGraph.findOneAndUpdate(

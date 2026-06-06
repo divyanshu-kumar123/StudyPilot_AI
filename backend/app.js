@@ -9,10 +9,12 @@ const app = express();
 
 // Security & Utility Middlewares
 app.use(helmet()); // Secures HTTP headers
-app.use(cors({
-    origin: process.env.NODE_ENV === 'production' ? 'your_production_url' : 'http://localhost:5173',
-    credentials: true
-}));
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 app.use(morgan('dev')); // HTTP request logger
 app.use(express.json()); // Parses incoming JSON payloads
 app.use(express.urlencoded({ extended: true }));

@@ -1,10 +1,21 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+// Helper to safely check local storage on boot
+const getUserFromStorage = () => {
+    try {
+        const user = localStorage.getItem('user');
+        console.log(user);
+        return user ? JSON.parse(user) : null;
+    } catch (e) {
+        return null;
+    }
+};
+
 const initialState = {
-    user: null,
+    user: getUserFromStorage(),
     accessToken: null,
     isAuthenticated: false,
-    isLoading: false, // Starts true until we verify the session on initial load
+    isLoading: true, // We start in a loading state until verifySession finishes
 };
 
 const authSlice = createSlice({
@@ -12,10 +23,13 @@ const authSlice = createSlice({
     initialState,
     reducers: {
         setCredentials: (state, action) => {
-            // Allows updating both, or just the token during a silent refresh
-            if (action.payload.user) state.user = action.payload.user;
-            if (action.payload.accessToken) state.accessToken = action.payload.accessToken;
-            
+            if (action.payload.user) {
+                state.user = action.payload.user;
+                localStorage.setItem('user', JSON.stringify(action.payload.user)); // Persist user profile
+            }
+            if (action.payload.accessToken) {
+                state.accessToken = action.payload.accessToken;
+            }
             state.isAuthenticated = true;
             state.isLoading = false;
         },
@@ -24,6 +38,7 @@ const authSlice = createSlice({
             state.accessToken = null;
             state.isAuthenticated = false;
             state.isLoading = false;
+            localStorage.removeItem('user'); // Clear profile on logout
         },
         setAuthLoading: (state, action) => {
             state.isLoading = action.payload;

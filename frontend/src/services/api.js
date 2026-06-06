@@ -35,6 +35,10 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
+        if (originalRequest.url.includes('/auth/login') || originalRequest.url.includes('/auth/register')) {
+            return Promise.reject(error);
+        }
+
         // If error is 401 and we haven't already retried this specific request
         if (error.response?.status === 401 && !originalRequest._retry) {
             

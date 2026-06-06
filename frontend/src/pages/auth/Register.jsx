@@ -3,30 +3,37 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../../features/auth/authSlice';
 import { authService } from '../../services/auth.service';
-import { BrainCircuit, Mail, Lock } from 'lucide-react';
+import { BrainCircuit, Mail, Lock, User } from 'lucide-react';
 import Loader from '../../components/common/Loader';
 
-const Login = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+const Register = () => {
+    const [formData, setFormData] = useState({
+        fullName: '',
+        email: '',
+        password: ''
+    });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.id]: e.target.value });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
-        console.log('FORM SUBMITTED');
 
         try {
-            const data = await authService.login(email, password);
+            const data = await authService.register(formData.fullName, formData.email, formData.password);
+            // The backend returns { user, accessToken } on successful registration
             dispatch(setCredentials({ user: data.user, accessToken: data.accessToken }));
             navigate('/'); // Redirect to dashboard
         } catch (err) {
-            setError(err.response?.data?.message || 'Invalid email or password');
+            setError(err.response?.data?.message || 'Registration failed. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -35,16 +42,16 @@ const Login = () => {
     return (
         <div className="min-h-screen flex items-center justify-center bg-background px-4 sm:px-6 lg:px-8 relative overflow-hidden">
             {/* Background Decorative Elements */}
-            <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-            <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+            <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-primary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+            <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
 
             <div className="max-w-md w-full space-y-8 bg-surface p-10 rounded-2xl shadow-xl z-10 border border-gray-100">
                 <div className="text-center">
                     <div className="mx-auto h-12 w-12 bg-primary-50 rounded-xl flex items-center justify-center mb-4">
                         <BrainCircuit className="h-8 w-8 text-primary-600" />
                     </div>
-                    <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Welcome back</h2>
-                    <p className="mt-2 text-sm text-gray-500">Sign in to your StudyPilot AI account</p>
+                    <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Create an account</h2>
+                    <p className="mt-2 text-sm text-gray-500">Start your AI-powered learning journey</p>
                 </div>
 
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -57,14 +64,28 @@ const Login = () => {
                     <div className="space-y-4">
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <User className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                                id="fullName"
+                                type="text"
+                                required
+                                value={formData.fullName}
+                                onChange={handleChange}
+                                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 sm:text-sm transition-colors bg-gray-50"
+                                placeholder="Full Name"
+                            />
+                        </div>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Mail className="h-5 w-5 text-gray-400" />
                             </div>
                             <input
                                 id="email"
                                 type="email"
                                 required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                value={formData.email}
+                                onChange={handleChange}
                                 className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 sm:text-sm transition-colors bg-gray-50"
                                 placeholder="Email address"
                             />
@@ -77,19 +98,12 @@ const Login = () => {
                                 id="password"
                                 type="password"
                                 required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                minLength={6}
+                                value={formData.password}
+                                onChange={handleChange}
                                 className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 sm:text-sm transition-colors bg-gray-50"
-                                placeholder="Password"
+                                placeholder="Create a password"
                             />
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                        <div className="text-sm">
-                            <Link to="/forgot-password" className="font-medium text-primary-600 hover:text-primary-500">
-                                Forgot your password?
-                            </Link>
                         </div>
                     </div>
 
@@ -98,14 +112,14 @@ const Login = () => {
                         disabled={isLoading}
                         className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all disabled:opacity-70"
                     >
-                        {isLoading ? <Loader size="sm" className="text-white" /> : 'Sign in'}
+                        {isLoading ? <Loader size="sm" className="text-white" /> : 'Create Account'}
                     </button>
                 </form>
 
                 <p className="text-center text-sm text-gray-500">
-                    Don't have an account?{' '}
-                    <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
-                        Sign up for free
+                    Already have an account?{' '}
+                    <Link to="/login" className="font-medium text-primary-600 hover:text-primary-500">
+                        Sign in here
                     </Link>
                 </p>
             </div>
@@ -113,4 +127,4 @@ const Login = () => {
     );
 };
 
-export default Login;
+export default Register;

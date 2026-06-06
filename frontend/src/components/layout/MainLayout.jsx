@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
+import { searchService } from '../../services/search.service';
+import Loader from '../common/Loader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../features/auth/authSlice';
 import useDebounce from '../../hooks/useDebounce';
 import api from '../../services/api';
+
 import { 
     LayoutDashboard, Files, Users, LineChart, Settings, 
-    LogOut, Search, Bell, BrainCircuit, Menu, X 
+    LogOut, Search, Bell, BrainCircuit, Menu
 } from 'lucide-react';
 
 const MainLayout = () => {
@@ -19,16 +22,40 @@ const MainLayout = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     
     // Search State with Debounce
-    const [searchTerm, setSearchTerm] = useState('');
-    const debouncedSearchTerm = useDebounce(searchTerm, 500);
+   const [searchTerm, setSearchTerm] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchResults, setSearchResults] = useState({ documents: [] });
+    const [showDropdown, setShowDropdown] = useState(false);
+
+    const debouncedSearchTerm = useDebounce(searchTerm, 400);
 
     // Watch the debounced term for API calls
-    useEffect(() => {
-        if (debouncedSearchTerm) {
-            console.log(`[Search] Triggering API for: ${debouncedSearchTerm}`);
-            // TODO: Dispatch global search API call here later
-        }
+ useEffect(() => {
+        const performSearch = async () => {
+            if (debouncedSearchTerm.trim().length > 1) {
+                setIsSearching(true);
+                setShowDropdown(true);
+                try {
+                    const results = await searchService.globalSearch(debouncedSearchTerm);
+                    setSearchResults(results);
+                } catch (error) {
+                    console.error("Search failed", error);
+                } finally {
+                    setIsSearching(false);
+                }
+            } else {
+                setSearchResults({ documents: [] });
+                setShowDropdown(false);
+            }
+        };
+
+        performSearch();
     }, [debouncedSearchTerm]);
+
+    const handleBlur = () => {
+        // Small delay to allow clicking on the dropdown links before it closes
+        setTimeout(() => setShowDropdown(false), 200);
+    };
 
     const navItems = [
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -128,19 +155,59 @@ const MainLayout = () => {
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {/* Top Header */}
                 <header className="h-16 bg-surface border-b border-gray-200 flex items-center justify-between px-4 md:px-8 z-10">
-                    <div className="flex items-center flex-1">
+                   <div className="flex items-center flex-1">
                         <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 mr-2 text-gray-500 md:hidden hover:bg-gray-100 rounded-lg">
                             <Menu className="h-6 w-6" />
                         </button>
-                        <div className="relative w-full max-w-md hidden sm:block">
+                        
+                        {/* Activated Search Bar with Dropdown */}
+                        <div className="relative w-full max-w-md hidden sm:block z-50">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <input 
                                 type="text" 
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search documents, quizzes, or rooms..." 
-                                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                onFocus={() => { if (searchTerm.length > 1) setShowDropdown(true); }}
+                                onBlur={handleBlur}
+                                placeholder="Search your documents..." 
+                                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                             />
+                            
+                            {/* Search Results Dropdown */}
+                            <AnimatePresence>
+                                {showDropdown && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="absolute top-full left-0 right-0 mt-2 bg-surface border border-gray-100 shadow-xl rounded-xl overflow-hidden py-2"
+                                    >
+                                        {isSearching ? (
+                                            <div className="p-4 flex justify-center"><Loader size="sm" text="Searching..." /></div>
+                                        ) : searchResults.documents.length > 0 ? (
+                                            <div>
+                                                <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Documents</div>
+                                                {searchResults.documents.map((doc) => (
+                                                    <Link 
+                                                        key={doc._id} 
+                                                        to={`/study/${doc._id}`}
+                                                        onClick={() => { setShowDropdown(false); setSearchTerm(''); }}
+                                                        className="flex items-center px-4 py-3 hover:bg-gray-50 transition-colors"
+                                                    >
+                                                        <Files className="h-4 w-4 text-gray-400 mr-3" />
+                                                        <div className="flex-1 truncate">
+                                                            <p className="text-sm font-medium text-gray-900 truncate">{doc.title}</p>
+                                                        </div>
+                                                        {doc.processingStatus === 'completed' && <span className="w-2 h-2 rounded-full bg-green-500"></span>}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="p-4 text-sm text-center text-gray-500">No results found for "{searchTerm}"</div>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
