@@ -1,6 +1,7 @@
 require('dotenv').config();
 const app = require('./app.js');
 const connectDB = require('./src/config/db.js');
+require('./src/workers/pdfProcessor.worker.js');
 
 const PORT = process.env.PORT || 5000;
 

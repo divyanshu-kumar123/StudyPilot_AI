@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const apiRoutes = require('./src/routes/index');
 
 const app = express();
 
@@ -20,6 +21,19 @@ app.use(cookieParser()); // Parses cookies for our refresh tokens
 // Health Check Route
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'success', message: 'StudyPilot AI Server is healthy and running.' });
+});
+
+app.use('/api', apiRoutes);
+
+// Global Error Handler Middleware 
+app.use((err, req, res, next) => {
+    const statusCode = err.statusCode || 500;
+    const message = err.message || 'Internal Server Error';
+    res.status(statusCode).json({
+        success: false,
+        message,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
 });
 
 module.exports = app;

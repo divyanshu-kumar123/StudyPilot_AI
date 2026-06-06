@@ -24,11 +24,10 @@ userSchema.index({ role: 1 });
 userSchema.index({ createdAt: -1 });
 
 // Pre-save hook to hash passwords
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
     if (!this.isModified('password')) return next();
     // 12 salt rounds is the current industry sweet spot for security vs performance
     this.password = await bcrypt.hash(this.password, 12); 
-    next();
 });
 
 // Instance method to check password validity
