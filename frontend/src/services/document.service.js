@@ -17,5 +17,10 @@ export const documentService = {
     getUserDocuments: async () => {
         const response = await api.get('/documents');
         return response.data.data;
+    },
+
+    getDocumentById: async (documentId) => {
+        const response = await api.get(`/documents/${documentId}`);
+        return response.data.data;
     }
 };

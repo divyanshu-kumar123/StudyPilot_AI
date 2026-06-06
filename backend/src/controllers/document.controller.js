@@ -69,3 +69,17 @@ exports.getUserDocuments = catchAsync(async (req, res) => {
 
     res.status(200).json(new ApiResponse(200, documents, 'Documents retrieved successfully'));
 });
+
+exports.getDocumentById = catchAsync(async (req, res) => {
+    const { documentId } = req.params;
+    const userId = req.user._id;
+
+    // Fetch the specific document. We can exclude extractedText to save bandwidth.
+    const document = await Document.findOne({ _id: documentId, userId }).select('-extractedText');
+    
+    if (!document) {
+        throw new ApiError(404, 'Document not found or unauthorized access');
+    }
+
+    res.status(200).json(new ApiResponse(200, document, 'Document retrieved successfully'));
+});

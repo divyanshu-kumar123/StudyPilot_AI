@@ -4,6 +4,7 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import Login from './pages/auth/Login';
 import Dashboard from './pages/dashboard/Dashboard';
 import Documents from './pages/documents/Documents';
+import StudyWorkspace from './pages/study/StudyWorkspace';
 
 // Temporary Placeholder Component for testing routes
 const PlaceholderPage = ({ title }) => (
@@ -25,6 +26,7 @@ function App() {
                     <Route element={<MainLayout />}>
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/documents" element={<Documents />} />
+                        <Route path="/study/:documentId" element={<StudyWorkspace />} />
                         <Route path="/rooms" element={<PlaceholderPage title="Study Rooms" />} />
                         <Route path="/analytics" element={<PlaceholderPage title="Performance Analytics" />} />
                         <Route path="/settings" element={<PlaceholderPage title="Account Settings" />} />
