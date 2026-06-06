@@ -5,6 +5,7 @@ const watsonxService = require("../services/watsonx.service");
 const ApiError = require("../utils/apiError");
 const ApiResponse = require("../utils/apiResponse");
 const catchAsync = require("../utils/catchAsync");
+const KnowledgeGraph = require('../models/knowledgeGraph.model');
 
 // Helper to retrieve document context safely
 const getDocumentContext = async (documentId, userId, limit = 10) => {
@@ -229,4 +230,93 @@ exports.generateNotes = catchAsync(async (req, res) => {
     });
 
     res.status(201).json(new ApiResponse(201, notes, 'Notes generated successfully'));
+});
+
+exports.generateKnowledgeGraph = catchAsync(async (req, res) => {
+    const { documentId } = req.params;
+    const userId = req.user._id;
+
+    // Use our existing helper to check rights and grab text chunks
+    const { document, contextText } = await getDocumentContext(documentId, userId);
+
+    if (!contextText) {
+        throw new ApiError(400, 'Not enough text extracted from document to construct a graph.');
+    }
+
+    // Direct Watsonx to parse terms, concepts, and relationships as an architectural layout
+    const prompt = `
+    You are an advanced data architect. Analyze the provided text context and build a structured knowledge graph map of the concepts, terms, and formulas contained within.
+    
+    Context:
+    """
+    ${contextText}
+    """
+
+    Identify the core concepts as nodes, and identify how they connect or relate to each other as edges.
+    You MUST respond with ONLY a valid JSON object. Do not wrap it in conversational text.
+    
+    The JSON structure MUST match this exact schema:
+    {
+        "nodes": [
+            { "id": "n1", "label": "Main Concept Name", "type": "concept" },
+            { "id": "n2", "label": "Sub Term Name", "type": "term" }
+        ],
+        "edges": [
+            { "source": "n1", "target": "n2", "relationship": "contains" }
+        ]
+    }
+    `;
+
+    console.log(`[AI] Generating Knowledge Graph from Watsonx for Document: ${documentId}...`);
+    const generatedText = await watsonxService.generateText(prompt);
+
+    // Hardened JSON boundary boundaries extraction
+    let parsedData;
+    try {
+        const firstBrace = generatedText.indexOf('{');
+        const lastBrace = generatedText.lastIndexOf('}');
+        if (firstBrace === -1 || lastBrace === -1) {
+            throw new Error('No JSON boundaries found');
+        }
+        parsedData = JSON.parse(generatedText.substring(firstBrace, lastBrace + 1));
+    } catch (error) {
+        console.error('[AI] Knowledge Graph JSON parse failed:', generatedText);
+        throw new ApiError(500, 'AI generated invalid structural layout data. Please try again.');
+    }
+
+    // Save or replace graph layout (Upsert pattern per document)
+    const graph = await KnowledgeGraph.findOneAndUpdate(
+        { documentId },
+        {
+            documentId,
+            nodes: parsedData.nodes,
+            edges: parsedData.edges,
+            generatedAt: new Date()
+        },
+        { new: true, upsert: true }
+    );
+
+    res.status(201).json(
+        new ApiResponse(201, graph, 'Knowledge graph map generated successfully')
+    );
+});
+
+exports.getKnowledgeGraph = catchAsync(async (req, res) => {
+    const { documentId } = req.params;
+    const userId = req.user._id;
+
+    // Fast-path security check: Ensure document belongs to requesting user
+    const document = await Document.findOne({ _id: documentId, userId });
+    if (!document) {
+        throw new ApiError(404, 'Document record not found or unauthorized access');
+    }
+
+    const graph = await KnowledgeGraph.findOne({ documentId });
+    if (!graph) {
+        throw new ApiError(404, 'No knowledge graph found for this document. Please generate it first.');
+    }
+
+    res.status(200).json(
+        new ApiResponse(200, graph, 'Knowledge graph retrieved successfully')
+    );
 });
