@@ -4,7 +4,7 @@ const initialState = {
     user: null,
     accessToken: null,
     isAuthenticated: false,
-    isLoading: true, // Starts true until we verify the session on initial load
+    isLoading: false, // Starts true until we verify the session on initial load
 };
 
 const authSlice = createSlice({
