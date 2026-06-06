@@ -1,17 +1,25 @@
 require('dotenv').config();
+const http = require('http');
 const app = require('./app.js');
 const connectDB = require('./src/config/db.js');
-require('./src/workers/pdfProcessor.worker.js');
+const { initSocket } = require('./src/sockets/socketManager.js');
 
-const PORT = process.env.PORT || 5000;
+// Import the worker so it starts listening to the Redis queue
+require('./src/workers/pdfProcessor.worker.js'); 
 
-// Initialize Server
+const PORT = process.env.PORT || 8000;
+
+// Wrap the Express app with Node's native HTTP server
+const server = http.createServer(app);
+
+// Initialize WebSockets on the server
+initSocket(server);
+
 const startServer = async () => {
-    // 1. Connect to Database first
     await connectDB();
-
-    // 2. Start listening for requests
-    app.listen(PORT, () => {
+    
+    // Note: We are now calling server.listen() instead of app.listen()
+    server.listen(PORT, () => {
         console.log(`[Server] StudyPilot AI running in ${process.env.NODE_ENV} mode on port ${PORT}`);
     });
 };
