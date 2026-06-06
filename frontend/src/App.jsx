@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import Login from './pages/auth/Login';
 
 // Temporary Placeholder Component for testing routes
 const PlaceholderPage = ({ title }) => (
@@ -14,8 +15,8 @@ function App() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* Public Routes - We will build these next */}
-                <Route path="/login" element={<PlaceholderPage title="Login / Register" />} />
+
+                <Route path="/login" element={<Login />} />
 
                 {/* Protected Application Routes */}
                 <Route element={<ProtectedRoute />}>

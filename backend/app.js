@@ -10,7 +10,7 @@ const app = express();
 // Security & Utility Middlewares
 app.use(helmet()); // Secures HTTP headers
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' ? 'your_production_url' : 'http://localhost:3000',
+    origin: process.env.NODE_ENV === 'production' ? 'your_production_url' : 'http://localhost:5173',
     credentials: true
 }));
 app.use(morgan('dev')); // HTTP request logger
