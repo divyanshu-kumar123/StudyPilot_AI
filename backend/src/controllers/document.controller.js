@@ -58,3 +58,14 @@ exports.uploadDocument = catchAsync(async (req, res) => {
         new ApiResponse(201, document, 'Document uploaded successfully and queued for AI processing')
     );
 });
+
+exports.getUserDocuments = catchAsync(async (req, res) => {
+    const userId = req.user._id;
+    
+    // Fetch documents, excluding the heavy extractedText field for performance
+    const documents = await Document.find({ userId })
+        .select('-extractedText')
+        .sort({ createdAt: -1 });
+
+    res.status(200).json(new ApiResponse(200, documents, 'Documents retrieved successfully'));
+});
