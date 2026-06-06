@@ -34,7 +34,7 @@ class WatsonxService {
     }
 
     // Core generation method
-    async generateText(prompt, modelId = 'meta-llama/llama-3-70b-instruct') {
+    async generateText(prompt, modelId = 'meta-llama/llama-3-3-70b-instruct') {
         const token = await this.getAuthToken();
 
         try {
