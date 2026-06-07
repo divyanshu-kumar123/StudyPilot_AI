@@ -12,7 +12,7 @@ Smart PDF Uploads & Pinecone Vectorization, AI Notes Generation (Summary & Detai
 **Frontend:** React, Vite, Tailwind CSS, Framer Motion, Socket.IO Client.
 **Backend:** Node.js, Express, Socket.IO, BullMQ.
 **Databases & Infrastructure:** MongoDB Atlas, Redis (Upstash/Render), Pinecone Vector Database.
-**Artificial Intelligence:** IBM Watsonx.
+**Artificial Intelligence:** IBM Watsonx
 
 ## Architecture & Deployment
 The application is deployed across a split cloud environment to optimize performance and real-time capabilities.
