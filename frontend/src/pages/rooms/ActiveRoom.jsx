@@ -51,6 +51,7 @@ const ActiveRoom = () => {
                 // Initialize WebSocket Connection
                 currentSocket = io(baseURL, {
                     withCredentials: true,
+                    transports: ['websocket', 'polling']
                 });
 
                 setSocket(currentSocket);
@@ -93,6 +94,8 @@ const ActiveRoom = () => {
             senderName: user.fullName,
             message: newMessage.trim(),
         };
+
+        setMessages((prev) => [...prev, messageData]);
 
         // Fire and forget via WebSockets
         socket.emit('send-message', messageData);
