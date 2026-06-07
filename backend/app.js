@@ -11,7 +11,7 @@ const app = express();
 app.use(helmet()); // Secures HTTP headers
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production' 
-        ? 'https://study-pilot-ai-sigma.vercel.app/' 
+        ? 'https://study-pilot-ai-sigma.vercel.app' 
         : 'http://localhost:5173',
     credentials: true // Crucial for cookies/sessions
 };
