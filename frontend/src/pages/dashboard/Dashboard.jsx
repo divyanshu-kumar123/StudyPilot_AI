@@ -147,7 +147,7 @@ const Dashboard = () => {
                                 </div>
                                 <div className="flex items-center space-x-4">
                                     <div className="text-right hidden sm:block">
-                                        <p className="text-sm font-medium text-gray-900">{progress.completionPercentage}% Mastered</p>
+                                        <p className="text-sm font-medium text-gray-900">{progress.completionPercentage}% Completed</p>
                                         <div className="w-24 h-1.5 bg-gray-100 rounded-full mt-1.5 overflow-hidden">
                                             <div 
                                                 className="h-full bg-primary-500 rounded-full" 

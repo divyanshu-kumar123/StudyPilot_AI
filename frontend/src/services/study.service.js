@@ -20,5 +20,33 @@ export const studyService = {
     getKnowledgeGraph: async (documentId) => {
         const response = await api.get(`/study/${documentId}/graph`);
         return response.data.data;
-    }
+    },
+    getSavedQuizzes: async (documentId) => {
+        const response = await api.get(`/study/${documentId}/quizzes`);
+        return response.data.data;
+    },
+    getSavedNotes: async (documentId) => {
+        const response = await api.get(`/study/${documentId}/notes`);
+        return response.data.data;
+    },
+    getSavedFlashcards: async (documentId) => {
+        const response = await api.get(`/study/${documentId}/flashcards`);
+        return response.data.data;
+    },
+    getAllUserQuizzes: async () => {
+        const response = await api.get('/study/my/quizzes');
+        return response.data.data;
+    },
+    getAllUserFlashcards: async () => {
+        const response = await api.get('/study/my/flashcards');
+        return response.data.data;
+    },
+    getAllUserNotes: async () => {
+        const response = await api.get('/study/my/notes');
+        return response.data.data;
+    },
+    chatWithDocument: async (documentId, message) => {
+        const response = await api.post(`/study/${documentId}/chat`, { message });
+        return response.data.data;
+    },
 };

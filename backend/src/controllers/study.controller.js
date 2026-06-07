@@ -6,6 +6,8 @@ const ApiError = require("../utils/apiError");
 const ApiResponse = require("../utils/apiResponse");
 const catchAsync = require("../utils/catchAsync");
 const KnowledgeGraph = require("../models/knowledgeGraph.model");
+const Notes = require('../models/notes.model');
+const Flashcard = require('../models/flashcard.model');
 
 // Bulletproof JSON extractor for unpredictable LLM outputs
 const extractJsonFromText = (text) => {
@@ -133,15 +135,19 @@ exports.generateQuiz = catchAsync(async (req, res) => {
 
   // 5. Save to Database
   const quiz = await Quiz.create({
-    userId,
-    documentId,
-    title: parsedData.title || `${document.title} - Practice Quiz`,
-    quizType,
-    difficulty,
-    totalQuestions: parsedData.questions.length,
-    estimatedTime: parsedData.questions.length * 1.5, // estimate 1.5 mins per question
-    questions: parsedData.questions,
-  });
+        userId: req.user._id,
+        documentId: req.params.documentId,
+        title: parsedData.title || 'AI Practice Quiz',
+        quizType: 'mcq',
+        difficulty: 'intermediate',
+        totalQuestions: parsedData.questions.length,
+        questions: parsedData.questions.map(q => ({
+            questionText: q.questionText,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+            explanation: q.explanation
+        }))
+    });
 
   // 6. Return Success
   res
@@ -277,6 +283,42 @@ exports.generateNotes = catchAsync(async (req, res) => {
     .json(new ApiResponse(201, notes, "Notes generated successfully"));
 });
 
+exports.chatWithDocument = catchAsync(async (req, res) => {
+    const { documentId } = req.params;
+    const { message } = req.body;
+    const userId = req.user._id;
+
+    // 1. Fetch Context using our existing helper
+    const { document, contextText } = await getDocumentContext(documentId, userId);
+
+    if (!contextText) {
+        throw new ApiError(400, "Not enough text extracted from document to answer questions.");
+    }
+
+    // 2. Construct the Chat Prompt
+    const prompt = `
+    You are an expert AI study assistant. Your goal is to help the student understand the provided document.
+    Answer the user's question based STRICTLY on the document context below. 
+    If the answer is not found in the context, politely inform the user that the document does not cover that specific topic.
+    Keep your answer concise, conversational, and easy to read. You may use markdown for emphasis.
+
+    Document Context:
+    """
+    ${contextText}
+    """
+
+    Student's Question: "${message}"
+    `;
+
+    console.log(`[AI] Processing Chat request for Document: ${documentId}...`);
+    
+    // 3. Call Watsonx (Expecting plain text/markdown back, NO JSON parsing needed here!)
+    const generatedText = await watsonxService.generateText(prompt);
+
+    // 4. Return the response
+    res.status(200).json(new ApiResponse(200, { reply: generatedText.trim() }, "Chat response generated"));
+});
+
 exports.generateKnowledgeGraph = catchAsync(async (req, res) => {
   const { documentId } = req.params;
   const userId = req.user._id;
@@ -375,4 +417,59 @@ exports.getKnowledgeGraph = catchAsync(async (req, res) => {
     .json(
       new ApiResponse(200, graph, "Knowledge graph retrieved successfully"),
     );
+});
+
+exports.getSavedQuizzes = catchAsync(async (req, res) => {
+    const quizzes = await Quiz.find({ 
+        documentId: req.params.documentId, 
+        userId: req.user._id 
+    }).sort({ createdAt: -1 });
+    
+    res.status(200).json(new ApiResponse(200, quizzes, 'Quizzes retrieved'));
+});
+
+exports.getSavedNotes = catchAsync(async (req, res) => {
+    const notes = await Notes.find({ 
+        documentId: req.params.documentId, 
+        userId: req.user._id 
+    }).sort({ createdAt: -1 });
+    
+    res.status(200).json(new ApiResponse(200, notes, 'Notes retrieved successfully'));
+});
+
+exports.getSavedFlashcards = catchAsync(async (req, res) => {
+    // Fetch all flashcards for this document
+    const flashcards = await Flashcard.find({ 
+        documentId: req.params.documentId, 
+        userId: req.user._id 
+    }).sort({ createdAt: -1 });
+    
+    res.status(200).json(new ApiResponse(200, flashcards, 'Flashcards retrieved successfully'));
+});
+
+// Fetch all quizzes globally for the user
+exports.getAllUserQuizzes = catchAsync(async (req, res) => {
+    // We use populate to bring in the Document Title for the UI
+    const quizzes = await Quiz.find({ userId: req.user._id })
+        .populate('documentId', 'title')
+        .sort({ createdAt: -1 });
+    res.status(200).json(new ApiResponse(200, quizzes, 'All quizzes retrieved'));
+});
+
+// Fetch all flashcards globally for the user
+exports.getAllUserFlashcards = catchAsync(async (req, res) => {
+    const Flashcard = require('../models/flashcard.model');
+    const flashcards = await Flashcard.find({ userId: req.user._id })
+        .populate('documentId', 'title')
+        .sort({ createdAt: -1 });
+    res.status(200).json(new ApiResponse(200, flashcards, 'All flashcards retrieved'));
+});
+
+// Fetch all notes globally for the user
+exports.getAllUserNotes = catchAsync(async (req, res) => {
+    const Notes = require('../models/notes.model');
+    const notes = await Notes.find({ userId: req.user._id })
+        .populate('documentId', 'title')
+        .sort({ createdAt: -1 });
+    res.status(200).json(new ApiResponse(200, notes, 'All notes retrieved'));
 });

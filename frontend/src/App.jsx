@@ -16,6 +16,9 @@ import Analytics from './pages/analytics/Analytics';
 import Settings from './pages/settings/Settings';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
+import GlobalFlashcards from './pages/library/GlobalFlashcards';
+import GlobalQuizzes from './pages/library/GlobalQuizzes';
+import GlobalNotes from './pages/library/GlobalNotes';
 
 function App() {
     const dispatch = useDispatch();
@@ -55,6 +58,9 @@ function App() {
                         <Route path="/documents" element={<Documents />} /> 
                         <Route path="/study/:documentId" element={<StudyWorkspace />} /> 
                         <Route path="/rooms" element={<Rooms />} />
+                        <Route path="/library/flashcards" element={<GlobalFlashcards />} />
+                        <Route path="/library/quizzes" element={<GlobalQuizzes />} />
+                        <Route path="/library/notes" element={<GlobalNotes />} />
                         <Route path="/rooms/:roomCode" element={<ActiveRoom />} />
                         <Route path="/analytics" element={<Analytics />} />
                         <Route path="/settings" element={<Settings />} />

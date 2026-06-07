@@ -10,7 +10,7 @@ import api from '../../services/api';
 
 import { 
     LayoutDashboard, Files, Users, LineChart, Settings, 
-    LogOut, Search, Bell, BrainCircuit, Menu
+    LogOut, Search, Bell, BrainCircuit, Menu, Layers, Target, FileText,
 } from 'lucide-react';
 
 const MainLayout = () => {
@@ -60,6 +60,9 @@ const MainLayout = () => {
     const navItems = [
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
         { name: 'My Documents', path: '/documents', icon: Files },
+        { name: 'All Flashcards', path: '/library/flashcards', icon: Layers }, 
+        { name: 'All Quizzes', path: '/library/quizzes', icon: Target }, 
+        { name: 'All Notes', path: '/library/notes', icon: FileText }, 
         { name: 'Study Rooms', path: '/rooms', icon: Users },
         { name: 'Analytics', path: '/analytics', icon: LineChart },
         { name: 'Settings', path: '/settings', icon: Settings },
