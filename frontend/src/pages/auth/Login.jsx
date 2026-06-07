@@ -19,7 +19,6 @@ const Login = () => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
-        console.log('FORM SUBMITTED');
 
         try {
             const data = await authService.login(email, password);

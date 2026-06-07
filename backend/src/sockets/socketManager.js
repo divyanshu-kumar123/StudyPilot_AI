@@ -6,7 +6,9 @@ let io;
 const initSocket = (server) => {
     io = new Server(server, {
         cors: {
-            origin: process.env.NODE_ENV === 'production' ? 'your_production_url' : 'http://localhost:5173',
+            origin: process.env.NODE_ENV === 'production' 
+            ? 'https://study-pilot-ai-sigma.vercel.app' 
+            : 'http://localhost:5173',
             methods: ['GET', 'POST'],
             credentials: true
         }
@@ -41,7 +43,7 @@ const initSocket = (server) => {
                 });
 
                 // 2. Broadcast the message to everyone in the room (including sender)
-                io.to(roomCode).emit('receive-message', {
+                socket.to(roomCode).emit('receive-message', {
                     _id: newMessage._id,
                     senderId,
                     senderName,
