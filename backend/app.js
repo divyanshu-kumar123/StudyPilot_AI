@@ -9,6 +9,7 @@ const app = express();
 
 // Security & Utility Middlewares
 app.use(helmet()); // Secures HTTP headers
+app.set('trust proxy', 1);
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production' 
         ? 'https://study-pilot-ai-sigma.vercel.app' 
